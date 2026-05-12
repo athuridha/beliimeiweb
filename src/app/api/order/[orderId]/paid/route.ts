@@ -55,5 +55,14 @@ export async function POST(
     `Cek GoBiz/mutasi, lalu balas:\n*ok ${orderNum}* untuk proses`;
 
   await sendWa(ADMIN_WA, message);
+
+  // Auto-process: trigger order processing in the background
+  const baseUrl = request.nextUrl.origin;
+  fetch(`${baseUrl}/api/auto-process`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orderId: order.id, secret: "beliimei-auto-process-internal" }),
+  }).catch(() => { /* fire and forget */ });
+
   return Response.json({ success: true, message: "Konfirmasi pembayaran terkirim ke admin." });
 }

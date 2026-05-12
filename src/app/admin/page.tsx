@@ -849,6 +849,13 @@ export default function AdminPage() {
 
   useEffect(() => { if (token) loadOrders(); }, [token, loadOrders]);
 
+  // Auto-refresh orders every 15 seconds for live status updates
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(loadOrders, 15000);
+    return () => clearInterval(interval);
+  }, [token, loadOrders]);
+
   const logout = () => { localStorage.removeItem("admin_token"); setToken(null); };
   const pendingCount = orders.filter((o) => o.status === "pending").length;
 

@@ -21,7 +21,10 @@ function Navbar() {
   return (
     <nav className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur shadow-sm" : "bg-transparent"}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
-        <Link href="/" className="font-bold text-xl text-primary">BeliIMEI</Link>
+        <Link href="/" className="flex items-center gap-2 font-bold text-xl text-primary">
+          <img src="/logo.png" alt="BeliIMEI Logo" className="w-8 h-8 object-contain" />
+          BeliIMEI
+        </Link>
         <div className="hidden md:flex items-center gap-8">
           <a href="#layanan" className="text-sm font-medium text-gray-600 hover:text-primary transition">Layanan</a>
           <a href="#cara-kerja" className="text-sm font-medium text-gray-600 hover:text-primary transition">Cara Kerja</a>

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "BeliIMEI - Aktivasi IMEI Tanpa Ribet",
@@ -15,8 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${inter.className} scroll-smooth`}>
-      <body className="min-h-screen bg-white text-gray-900 antialiased">{children}</body>
+    <html lang="id" className={`${outfit.className} scroll-smooth`}>
+      <body className="min-h-[100dvh] bg-white text-gray-900 antialiased">
+        {children}
+        <WhatsAppWidget />
+      </body>
     </html>
   );
 }

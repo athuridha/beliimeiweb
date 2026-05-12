@@ -294,9 +294,22 @@ function Footer() {
           </div>
           <div>
             <h3 className="text-white font-semibold mb-3">Kontak</h3>
-            <ul className="space-y-2 text-sm">
-              <li>WhatsApp: 085213971757</li>
-              <li>Jam Kerja: 24/7</li>
+            <ul className="space-y-3 text-sm">
+              <li>
+                <a 
+                  href="https://wa.me/6285213971757" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="inline-flex items-center gap-2 hover:text-green-400 transition"
+                >
+                  <MessageCircle size={18} />
+                  <span>Chat WhatsApp</span>
+                </a>
+              </li>
+              <li className="flex items-center gap-2">
+                <Clock size={18} />
+                <span>Jam Kerja: 24/7</span>
+              </li>
             </ul>
           </div>
         </div>

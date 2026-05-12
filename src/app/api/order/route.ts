@@ -24,6 +24,36 @@ export async function POST(request: NextRequest) {
   const sellPrice = pricing[service]?.sell_price || 0;
 
   const orders = await loadOrders();
+
+  // Enforce status check before roamer order
+  if (["roamer", "roamer_instant"].includes(service)) {
+    const statusOrder = orders.find(
+      (o) => o.imei === imei && o.service === "status" && o.status === "completed"
+    );
+
+    if (!statusOrder) {
+      return Response.json(
+        { success: false, message: "Anda harus memesan layanan 'Cek Status CEIR' terlebih dahulu dan menunggu hingga selesai sebelum dapat melakukan aktivasi Roamer." },
+        { status: 400 }
+      );
+    }
+
+    // Check if result contains UNKNOWN
+    let isUnknown = false;
+    if (typeof statusOrder.result === "string") {
+      isUnknown = statusOrder.result.toUpperCase().includes("STATUS: UNKNOWN");
+    } else if (typeof statusOrder.result === "object" && statusOrder.result !== null) {
+      isUnknown = String((statusOrder.result as Record<string, unknown>).status).toUpperCase() === "UNKNOWN";
+    }
+
+    if (!isUnknown) {
+      return Response.json(
+        { success: false, message: "IMEI Anda tidak berstatus UNKNOWN. Layanan Roamer hanya dapat diproses untuk IMEI dengan status UNKNOWN." },
+        { status: 400 }
+      );
+    }
+  }
+
   let counter = await getCounter();
   if (!counter) counter = orders.length;
   counter++;

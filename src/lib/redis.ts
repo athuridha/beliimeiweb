@@ -32,17 +32,19 @@ export const KEYS = {
   PAYMENT_METHODS: "cekimei:payment_methods",
 };
 
-export const VALID_SERVICES = new Set(["roamer", "roamer_instant"]);
+export const VALID_SERVICES = new Set(["roamer", "roamer_instant", "status"]);
 export const ADMIN_WA = process.env.ADMIN_WA || "085213971757";
 
 export const DEFAULT_SELL_PRICES: Record<string, number> = {
   roamer_instant: 140000,
   roamer: 120000,
+  status: 5500,
 };
 
 export const DEFAULT_SERVICE_NAMES: Record<string, string> = {
   roamer_instant: "Add Roamer 3 Bulan (Fast)",
   roamer: "Add Roamer 3 Bulan (Selow)",
+  status: "Cek Status CEIR",
 };
 
 export const QRIS_STATIC =

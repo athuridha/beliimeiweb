@@ -22,7 +22,7 @@ export async function POST(
   order.status = "processing";
   await saveOrders(orders);
 
-  order.result = "Memproses roamer...";
+  order.result = order.service === "status" ? "Memproses cek status..." : "Memproses roamer...";
   await saveOrders(orders);
 
   let data;

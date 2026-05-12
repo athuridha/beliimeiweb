@@ -301,6 +301,8 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
                 <div key={k} className="flex justify-between py-1.5 border-b border-gray-50"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></div>
               ))}
             </div>
+            
+
             {detail.payment_proof && (
               <div className="mt-4">
                 <p className="text-sm font-semibold mb-2">Bukti Pembayaran:</p>

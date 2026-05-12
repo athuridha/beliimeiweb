@@ -10,7 +10,7 @@ interface PaymentMethod { id: string; type: string; label: string; bank_name?: s
 export default function OrderPage() {
   const [services, setServices] = useState<Record<string, Service>>({});
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [form, setForm] = useState({ name: "", whatsapp: "", imei: "", service: "" });
+  const [form, setForm] = useState({ name: "", whatsapp: "", imei: "", service: "status" });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; order_id?: string; message: string } | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<string>("");
@@ -18,11 +18,40 @@ export default function OrderPage() {
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [qrisString, setQrisString] = useState("");
+  const [isEligible, setIsEligible] = useState(false);
+  const [checkingImei, setCheckingImei] = useState(false);
 
   useEffect(() => {
     fetch("/api/services").then((r) => r.json()).then((d) => { if (d.success) setServices(d.services); });
     fetch("/api/payment-methods").then((r) => r.json()).then((d) => { if (d.success) setPaymentMethods(d.methods); });
   }, []);
+
+  useEffect(() => {
+    const checkEligibility = async () => {
+      if (form.imei.length >= 14) {
+        setCheckingImei(true);
+        try {
+          const r = await fetch(`/api/check-eligibility?imei=${form.imei}`);
+          const d = await r.json();
+          setIsEligible(d.eligible);
+          if (d.eligible && form.service === "status") {
+             // If eligible, switch them off status to roamer automatically
+             setForm(prev => ({ ...prev, service: "roamer" }));
+          } else if (!d.eligible) {
+             setForm(prev => ({ ...prev, service: "status" }));
+          }
+        } catch {
+          setIsEligible(false);
+        }
+        setCheckingImei(false);
+      } else {
+        setIsEligible(false);
+        setForm(prev => ({ ...prev, service: "status" }));
+      }
+    };
+    const timeoutId = setTimeout(checkEligibility, 500);
+    return () => clearTimeout(timeoutId);
+  }, [form.imei]);
 
   const selectedPrice = services[form.service]?.sell_price || 0;
 
@@ -153,7 +182,11 @@ export default function OrderPage() {
     );
   }
 
-  const serviceList = Object.values(services);
+  // Filter services based on eligibility
+  const serviceList = Object.values(services).filter((svc) => {
+    if (svc.code === "status") return !isEligible;
+    return isEligible;
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-white to-cyan-50 py-24 px-4">
@@ -166,23 +199,43 @@ export default function OrderPage() {
           {result && !result.success && <div className="bg-red-50 text-red-700 p-3 rounded-xl text-sm mb-4">{result.message}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Layanan</label>
-              <div className="grid grid-cols-1 gap-3">
-                {serviceList.map((svc) => (
-                  <button key={svc.code} onClick={() => setForm({ ...form, service: svc.code })}
-                    className={`text-left p-4 rounded-xl border-2 transition ${form.service === svc.code ? "border-primary bg-primary/5" : "border-gray-100 hover:border-gray-200"}`}>
-                    <div className="font-semibold text-gray-900">{svc.name}</div>
-                    <div className="text-primary font-bold mt-1">Rp {svc.sell_price.toLocaleString("id-ID")}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">IMEI</label>
-              <input type="text" maxLength={16} placeholder="Masukkan 15 digit IMEI" value={form.imei}
-                onChange={(e) => setForm({ ...form, imei: e.target.value.replace(/\D/g, "") })}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"/>
+              <div className="relative">
+                <input type="text" maxLength={16} placeholder="Masukkan 15 digit IMEI" value={form.imei}
+                  onChange={(e) => setForm({ ...form, imei: e.target.value.replace(/\D/g, "") })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition"/>
+                {checkingImei && (
+                  <div className="absolute right-3 top-3 text-primary">
+                    <Loader2 size={18} className="animate-spin" />
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Masukkan IMEI untuk melihat layanan yang tersedia.</p>
             </div>
+            {form.imei.length >= 14 && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Layanan</label>
+                {!isEligible && !checkingImei && (
+                  <div className="bg-amber-50 text-amber-800 text-xs p-3 rounded-xl mb-3 border border-amber-100">
+                    Sistem mendeteksi IMEI Anda belum di-cek statusnya di CEIR, atau statusnya bukan UNKNOWN. Anda harus memesan layanan Cek Status CEIR terlebih dahulu.
+                  </div>
+                )}
+                {isEligible && !checkingImei && (
+                  <div className="bg-green-50 text-green-800 text-xs p-3 rounded-xl mb-3 border border-green-100">
+                    IMEI Anda eligible (UNKNOWN). Silakan pilih paket aktivasi Roamer.
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-3">
+                  {serviceList.map((svc) => (
+                    <button key={svc.code} onClick={() => setForm({ ...form, service: svc.code })}
+                      className={`text-left p-4 rounded-xl border-2 transition ${form.service === svc.code ? "border-primary bg-primary/5" : "border-gray-100 hover:border-gray-200"}`}>
+                      <div className="font-semibold text-gray-900">{svc.name}</div>
+                      <div className="text-primary font-bold mt-1">Rp {svc.sell_price.toLocaleString("id-ID")}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Nama Lengkap</label>
               <input type="text" placeholder="Nama Anda" value={form.name}

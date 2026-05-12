@@ -90,6 +90,34 @@ export async function checkImeiStatus(imei: string) {
   return { status: null, message: "Timeout menunggu hasil cek IMEI", raw: null };
 }
 
+export async function checkImeiHistory(imei: string) {
+  const h = await headers({ "Content-Type": "application/json" });
+  const data = await safeFetch(`${PROXY_BASE}/order`, {
+    method: "POST", headers: h, body: JSON.stringify({ service: "history", imei }),
+  });
+
+  if (!data.status) return { success: false, message: (data.message as string) || "Gagal cek history", raw: data };
+
+  const orderId = ((data.data as Record<string, unknown>)?.order_id as string) || "";
+  if (!orderId) return { success: false, message: "Tidak dapat order_id dari cek history", raw: data };
+
+  for (let i = 0; i < 10; i++) {
+    try {
+      const h2 = await headers();
+      const sdata = await safeFetch(`${PROXY_BASE}/status?order_id=${orderId}`, { headers: h2 });
+      if (sdata.status && (sdata.data as Record<string, unknown>)?.status === "Success") {
+        const result = (sdata.data as Record<string, unknown>)?.result;
+        return { success: true, history: result, raw: sdata };
+      }
+      if ((sdata.data as Record<string, unknown>)?.status === "Failed") {
+        return { success: false, message: "Cek history gagal", raw: sdata };
+      }
+    } catch { /* continue */ }
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  return { success: false, message: "Timeout menunggu hasil cek history IMEI", raw: null };
+}
+
 export async function processOrderApi(service: string, imei: string) {
   const h = await headers({ "Content-Type": "application/json" });
   return safeFetch(`${PROXY_BASE}/order`, {

@@ -1,5 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
 import { getSecret, getPricing } from "@/lib/redis";
+import OpenAI from "openai";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       return Response.json({ success: false, message: "Pesan tidak valid." }, { status: 400 });
     }
 
-    const apiKey = await getSecret("GEMINI_API_KEY");
+    const apiKey = await getSecret("ALIBABA_API_KEY");
     if (!apiKey) {
       return Response.json({
         success: false,
@@ -56,25 +56,23 @@ export async function POST(request: Request) {
 
     const systemPrompt = SYSTEM_PROMPT.replace("{SERVICES}", servicesText || "Informasi harga belum tersedia.");
 
-    const ai = new GoogleGenAI({ apiKey });
-
-    // Build conversation history for Gemini
-    const contents = messages.map((msg: { role: string; content: string }) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents,
-      config: {
-        systemInstruction: systemPrompt,
-        maxOutputTokens: 512,
-        temperature: 0.7,
-      },
+    // Initialize OpenAI client pointing to Alibaba DashScope Intl
+    const client = new OpenAI({
+      apiKey: apiKey,
+      baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     });
 
-    const text = response.text || "Maaf, saya tidak bisa menjawab saat ini. Silakan coba lagi.";
+    const completion = await client.chat.completions.create({
+      model: "qwen3.6-plus",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ],
+      max_tokens: 512,
+      temperature: 0.7
+    });
+
+    const text = completion.choices[0]?.message?.content || "Maaf, saya tidak bisa menjawab saat ini. Silakan coba lagi.";
 
     return Response.json({ success: true, reply: text });
   } catch (error: unknown) {
@@ -83,7 +81,7 @@ export async function POST(request: Request) {
     const errMsg = error instanceof Error ? error.message : String(error);
     
     // Check for quota/rate limit errors
-    if (errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED") || errMsg.includes("quota")) {
+    if (errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("rate_limit")) {
       return Response.json({
         success: true,
         reply: "Mohon maaf, layanan AI kami sedang sibuk. Silakan coba lagi dalam beberapa menit, atau hubungi admin via WhatsApp untuk bantuan langsung.",

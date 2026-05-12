@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { adminAuth } from "@/lib/auth";
 import { loadOrders, saveOrders } from "@/lib/orders";
-import { checkImeiStatus, processOrderApi, ALLOWED_STATUSES } from "@/lib/cekceir";
+import { processOrderApi } from "@/lib/cekceir";
 import { notifyCustomer } from "@/lib/whatsapp";
 
 export async function POST(
@@ -22,26 +22,7 @@ export async function POST(
   order.status = "processing";
   await saveOrders(orders);
 
-  const imeiCheck = await checkImeiStatus(order.imei);
-  if (!imeiCheck.status) {
-    order.status = "failed";
-    order.result = `Gagal cek status IMEI: ${imeiCheck.message}`;
-    order.processedAt = new Date().toISOString();
-    await saveOrders(orders);
-    await notifyCustomer(order);
-    return Response.json({ success: false, message: `Gagal cek IMEI: ${imeiCheck.message}` }, { status: 500 });
-  }
-
-  if (!ALLOWED_STATUSES.has(imeiCheck.status)) {
-    order.status = "failed";
-    order.result = `IMEI sudah berstatus ${imeiCheck.status}. Tidak perlu roamer karena perangkat sudah legal/terdaftar.`;
-    order.processedAt = new Date().toISOString();
-    await saveOrders(orders);
-    await notifyCustomer(order);
-    return Response.json({ success: false, message: `IMEI berstatus ${imeiCheck.status} (bukan UNKNOWN). Order ditolak.` }, { status: 400 });
-  }
-
-  order.result = "IMEI berstatus UNKNOWN. Memproses roamer...";
+  order.result = "Memproses roamer...";
   await saveOrders(orders);
 
   let data;

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
 import "./globals.css";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
+import AIChatbot from "@/components/AIChatbot";
 
 const outfit = Outfit({ subsets: ["latin"] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className="min-h-[100dvh] bg-white text-gray-900 antialiased">
         {children}
         <WhatsAppWidget />
+        <AIChatbot />
       </body>
     </html>
   );

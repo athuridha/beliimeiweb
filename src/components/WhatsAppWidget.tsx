@@ -29,7 +29,7 @@ export default function WhatsAppWidget() {
     return () => clearTimeout(timer);
   }, []);
 
-  if (pathname?.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin") || pathname === "/maintenance") return null;
 
   return (
     <div

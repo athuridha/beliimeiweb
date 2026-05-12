@@ -643,6 +643,14 @@ function LandingTab({ token }: { token: string }) {
     <div>
       <h2 className="text-xl font-bold mb-6">Landing Page</h2>
       <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+        <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+          <input type="checkbox" id="maintenance" checked={config.maintenance_mode === "true"} 
+            onChange={(e) => setConfig({ ...config, maintenance_mode: e.target.checked ? "true" : "false" })}
+            className="w-5 h-5 text-amber-600 rounded focus:ring-amber-500 cursor-pointer" />
+          <label htmlFor="maintenance" className="font-semibold text-amber-900 select-none cursor-pointer">
+            Aktifkan Maintenance Mode (Tutup Sementara Seluruh Layanan)
+          </label>
+        </div>
         {fields.map((f) => (
           <div key={f.key}>
             <label className="block text-sm font-semibold text-gray-700 mb-1">{f.label}</label>

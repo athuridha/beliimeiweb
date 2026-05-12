@@ -297,7 +297,7 @@ function Footer() {
             <ul className="space-y-3 text-sm">
               <li>
                 <a 
-                  href="https://wa.me/6285213971757" 
+                  href="https://wa.me/6281384143551" 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   className="inline-flex items-center gap-2 hover:text-green-400 transition"

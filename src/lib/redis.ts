@@ -36,8 +36,8 @@ export const VALID_SERVICES = new Set(["roamer", "roamer_instant"]);
 export const ADMIN_WA = process.env.ADMIN_WA || "085213971757";
 
 export const DEFAULT_SELL_PRICES: Record<string, number> = {
-  roamer_instant: 130000,
-  roamer: 100000,
+  roamer_instant: 140000,
+  roamer: 120000,
 };
 
 export const DEFAULT_SERVICE_NAMES: Record<string, string> = {

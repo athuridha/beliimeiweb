@@ -137,3 +137,8 @@ export async function apiRoamerStatus(orderId: string) {
   const h = await headers();
   return safeFetch(`${PROXY_BASE}/roamer/status?order_id=${orderId}`, { headers: h });
 }
+
+export async function apiServicesList() {
+  const h = await headers();
+  return safeFetch(`${PROXY_BASE}/services`, { method: "POST", headers: h });
+}

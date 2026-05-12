@@ -175,6 +175,9 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
   const [filterStatus, setFilterStatus] = useState("all");
   const [detail, setDetail] = useState<Order | null>(null);
   const [processing, setProcessing] = useState("");
+  const [showManual, setShowManual] = useState(false);
+  const [manualForm, setManualForm] = useState({ name: "", whatsapp: "", imei: "", service: "status", price: "", status: "pending", notify: false });
+  const [manualLoading, setManualLoading] = useState(false);
 
   const filtered = orders.filter((o) => {
     if (filterStatus !== "all" && o.status !== filterStatus) return false;
@@ -184,6 +187,20 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
     }
     return true;
   });
+
+  const submitManual = async () => {
+    setManualLoading(true);
+    const r = await fetch("/api/admin/orders", { method: "POST", headers: authHeaders(token), body: JSON.stringify(manualForm) });
+    const d = await r.json();
+    if (d.success) {
+      setShowManual(false);
+      setManualForm({ name: "", whatsapp: "", imei: "", service: "status", price: "", status: "pending", notify: false });
+      refresh();
+    } else {
+      alert(d.message || "Gagal membuat pesanan");
+    }
+    setManualLoading(false);
+  };
 
   const processOrder = async (id: string) => {
     setProcessing(id);
@@ -207,7 +224,12 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
 
   return (
     <div>
-      <h2 className="text-xl font-bold mb-6">Pesanan</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Pesanan</h2>
+        <button onClick={() => setShowManual(true)} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-dark transition">
+          <Plus size={16}/> Pesanan Manual
+        </button>
+      </div>
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-3 text-gray-400"/>
@@ -291,6 +313,48 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
                 <pre className="bg-gray-900 text-green-400 p-3 rounded-xl text-xs overflow-auto max-h-48">{typeof detail.result === "string" ? detail.result : JSON.stringify(detail.result as Record<string, unknown>, null, 2)}</pre>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showManual && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowManual(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Buat Pesanan Manual</h3>
+              <button onClick={() => setShowManual(false)} className="p-1 rounded-lg hover:bg-gray-100"><X size={18}/></button>
+            </div>
+            <div className="space-y-3">
+              <input type="text" placeholder="Nama Customer" value={manualForm.name} onChange={(e) => setManualForm({ ...manualForm, name: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+              <input type="text" placeholder="WhatsApp (opsional)" value={manualForm.whatsapp} onChange={(e) => setManualForm({ ...manualForm, whatsapp: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+              <input type="text" placeholder="IMEI" value={manualForm.imei} onChange={(e) => setManualForm({ ...manualForm, imei: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+              <select value={manualForm.service} onChange={(e) => setManualForm({ ...manualForm, service: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white">
+                <option value="status">Cek Status (Kemenperin)</option>
+                <option value="history">Cek History (Apple)</option>
+                <option value="roamer">Roamer (Pending)</option>
+                <option value="roamer_instant">Roamer (Instant)</option>
+              </select>
+              <input type="number" placeholder="Harga (Kosongkan utk harga default)" value={manualForm.price} onChange={(e) => setManualForm({ ...manualForm, price: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+              <select value={manualForm.status} onChange={(e) => setManualForm({ ...manualForm, status: e.target.value })}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none bg-white">
+                <option value="pending">Pending</option>
+                <option value="processing">Diproses</option>
+                <option value="waiting">Menunggu</option>
+                <option value="completed">Selesai</option>
+              </select>
+              <label className="flex items-center gap-2 text-sm text-gray-700 mt-2">
+                <input type="checkbox" checked={manualForm.notify} onChange={(e) => setManualForm({ ...manualForm, notify: e.target.checked })} className="rounded text-primary focus:ring-primary"/>
+                Kirim Notifikasi WA ke Customer (Jika pending)
+              </label>
+              <button onClick={submitManual} disabled={manualLoading || !manualForm.imei} className="w-full bg-primary text-white py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50 mt-2">
+                {manualLoading ? "Menyimpan..." : "Buat Pesanan"}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -596,13 +660,34 @@ function LandingTab({ token }: { token: string }) {
 
 // ====== API TOOLS TAB ======
 function ApiToolsTab({ token }: { token: string }) {
+  const [apiPrices, setApiPrices] = useState<ApiPrices>({});
+
+  useEffect(() => {
+    fetch("/api/admin/api-tools/services-list", { method: "POST", headers: authHeaders(token) })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.status === true && d.data && d.data.services) {
+          const prices: ApiPrices = {};
+          for (const s of d.data.services) {
+            prices[s.code] = { name: s.name, price: s.price };
+          }
+          setApiPrices(prices);
+        }
+      });
+  }, [token]);
+
+  const getCost = (code: string, fallback: string) => {
+    return apiPrices[code] ? `Rp ${apiPrices[code].price.toLocaleString("id-ID")}` : fallback;
+  };
+
   const tools = [
     { id: "auth", label: "Verifikasi API", endpoint: "POST /auth", cost: "Gratis" },
-    { id: "order-status", label: "Cek Status", endpoint: "POST /order (status)", cost: "Rp 3.000" },
-    { id: "order-history", label: "Cek History", endpoint: "POST /order (history)", cost: "Rp 5.000" },
+    { id: "services-list", label: "Daftar Layanan", endpoint: "POST /services", cost: "Gratis" },
+    { id: "order-status", label: "Cek Status", endpoint: "POST /order (status)", cost: getCost("status", "Rp 3.000") },
+    { id: "order-history", label: "Cek History", endpoint: "POST /order (history)", cost: getCost("history", "Rp 5.000") },
     { id: "ceir-status", label: "Status Order CEIR", endpoint: "GET /status", cost: "Gratis" },
-    { id: "roamer-add", label: "Roamer (Pending)", endpoint: "POST /roamer/add", cost: "Rp 73.000" },
-    { id: "roamer-instant", label: "Roamer Instant", endpoint: "POST /roamer/instant", cost: "Rp 80.000" },
+    { id: "roamer-add", label: "Roamer (Pending)", endpoint: "POST /roamer/add", cost: getCost("roamer", "Rp 95.000") },
+    { id: "roamer-instant", label: "Roamer Instant", endpoint: "POST /roamer/instant", cost: getCost("roamer_instant", "Rp 95.000") },
     { id: "roamer-status", label: "Status Roamer", endpoint: "GET /roamer/status", cost: "Gratis" },
   ];
   const [active, setActive] = useState("auth");
@@ -619,6 +704,9 @@ function ApiToolsTab({ token }: { token: string }) {
       switch (active) {
         case "auth":
           r = await fetch("/api/admin/api-tools/auth", { method: "POST", headers: h });
+          break;
+        case "services-list":
+          r = await fetch("/api/admin/api-tools/services-list", { method: "POST", headers: h });
           break;
         case "order-status":
           r = await fetch("/api/admin/api-tools/order-ceir", { method: "POST", headers: h, body: JSON.stringify({ service: "status", imei }) });

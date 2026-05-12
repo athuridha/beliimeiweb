@@ -115,6 +115,7 @@ function DashboardTab({ orders, token }: { orders: Order[]; token: string }) {
   const completed = orders.filter((o) => o.status === "completed").length;
   const failed = orders.filter((o) => o.status === "failed").length;
   const revenue = orders.filter((o) => o.status === "completed").reduce((s, o) => s + (o.price || 0), 0);
+  const netRevenue = revenue - (completed * 3000) - (completed * 95000);
 
   const cards = [
     { label: "Total Pesanan", value: total, color: "border-blue-500" },
@@ -123,6 +124,7 @@ function DashboardTab({ orders, token }: { orders: Order[]; token: string }) {
     { label: "Berhasil", value: completed, color: "border-green-500" },
     { label: "Gagal", value: failed, color: "border-red-500" },
     { label: "Total Pendapatan", value: `Rp ${revenue.toLocaleString("id-ID")}`, color: "border-emerald-500" },
+    { label: "Pendapatan Bersih", value: `Rp ${netRevenue.toLocaleString("id-ID")}`, color: "border-teal-500" },
     { label: "Saldo API", value: balance !== null ? `Rp ${balance.toLocaleString("id-ID")}` : "Loading...", color: "border-purple-500" },
   ];
 

@@ -269,10 +269,41 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [detail, setDetail] = useState<Order | null>(null);
+  const [editForm, setEditForm] = useState({ status: "", result: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
   const [processing, setProcessing] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [manualForm, setManualForm] = useState({ name: "", whatsapp: "", imei: "", service: "status", price: "", status: "pending", notify: false });
   const [manualLoading, setManualLoading] = useState(false);
+
+  const openDetail = (o: Order) => {
+    setDetail(o);
+    let resStr = "";
+    if (typeof o.result === "string") resStr = o.result;
+    else if (o.result) resStr = JSON.stringify(o.result, null, 2);
+    setEditForm({ status: o.status, result: resStr });
+  };
+
+  const saveDetail = async () => {
+    if (!detail) return;
+    setSavingEdit(true);
+    try {
+      const r = await fetch(`/api/admin/orders/${detail.id}`, {
+        method: "PATCH",
+        headers: authHeaders(token),
+        body: JSON.stringify(editForm)
+      });
+      const d = await r.json();
+      if (d.success) {
+        toast("Pesanan berhasil diperbarui", "success");
+        setDetail(null);
+        refresh();
+      } else {
+        toast(d.message || "Gagal memperbarui pesanan", "error");
+      }
+    } catch (e) { toast("Terjadi kesalahan jaringan", "error"); }
+    setSavingEdit(false);
+  };
 
   const filtered = orders.filter((o) => {
     if (filterStatus !== "all" && o.status !== filterStatus) return false;
@@ -392,7 +423,7 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
                 <td className="p-3 text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString("id-ID")}</td>
                 <td className="p-3">
                   <div className="flex items-center gap-1">
-                    <button onClick={() => setDetail(o)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500" title="Detail"><Eye size={14}/></button>
+                    <button onClick={() => openDetail(o)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500" title="Detail"><Eye size={14}/></button>
                     {o.status === "pending" && <button onClick={() => processOrder(o.id)} disabled={processing === o.id} className="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="Proses">{processing === o.id ? <Loader2 size={14} className="animate-spin"/> : <Play size={14}/>}</button>}
                     {o.status === "waiting" && <button onClick={() => checkStatus(o.id)} disabled={processing === o.id} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600" title="Cek Status">{processing === o.id ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14}/>}</button>}
                     <a href={`https://wa.me/${o.whatsapp.replace(/^0/, "62")}`} target="_blank" className="p-1.5 rounded-lg hover:bg-green-50 text-green-600" title="WhatsApp"><ExternalLink size={14}/></a>
@@ -417,13 +448,38 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
               {[
                 ["Nama", detail.name], ["WhatsApp", detail.whatsapp], ["IMEI", detail.imei],
                 ["Layanan", detail.service], ["Harga", `Rp ${(detail.price || 0).toLocaleString("id-ID")}`],
-                ["Status", detail.status], ["Tanggal", new Date(detail.createdAt).toLocaleString("id-ID")],
+                ["Tanggal", new Date(detail.createdAt).toLocaleString("id-ID")],
                 ["Metode Bayar", detail.payment_method || "-"],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between py-1.5 border-b border-gray-50"><span className="text-gray-500">{k}</span><span className="font-medium">{v}</span></div>
               ))}
             </div>
-            
+
+            <div className="mt-4">
+              <label className="block text-sm font-semibold mb-1">Status Pesanan</label>
+              <select 
+                value={editForm.status} 
+                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              >
+                <option value="pending">Pending</option>
+                <option value="processing">Diproses</option>
+                <option value="waiting">Menunggu</option>
+                <option value="completed">Selesai</option>
+                <option value="failed">Gagal</option>
+              </select>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-sm font-semibold mb-1">Catatan / Hasil API</label>
+              <textarea 
+                value={editForm.result} 
+                onChange={(e) => setEditForm(prev => ({ ...prev, result: e.target.value }))}
+                rows={4}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none font-mono text-xs"
+                placeholder="Masukkan catatan atau hasil proses..."
+              />
+            </div>
 
             {detail.payment_proof && (
               <div className="mt-4">
@@ -431,12 +487,23 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
                 <img src={detail.payment_proof} alt="Bukti" className="rounded-xl max-h-64 object-contain border"/>
               </div>
             )}
-            {detail.result != null && (
-              <div className="mt-4">
-                <p className="text-sm font-semibold mb-2">Hasil:</p>
-                <pre className="bg-gray-900 text-green-400 p-3 rounded-xl text-xs overflow-auto max-h-48">{typeof detail.result === "string" ? detail.result : JSON.stringify(detail.result as Record<string, unknown>, null, 2)}</pre>
-              </div>
-            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button 
+                onClick={() => setDetail(null)} 
+                className="px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 hover:bg-gray-50"
+              >
+                Tutup
+              </button>
+              <button 
+                onClick={saveDetail} 
+                disabled={savingEdit}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-primary text-white hover:bg-primary-dark disabled:opacity-50 flex items-center gap-2"
+              >
+                {savingEdit ? <Loader2 size={16} className="animate-spin"/> : null}
+                Simpan & Update
+              </button>
+            </div>
           </div>
         </div>
       )}

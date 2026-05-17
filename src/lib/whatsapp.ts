@@ -50,10 +50,11 @@ export async function notifyCustomer(order: Order) {
   const serviceLabel = serviceNames[order.service] || order.service;
   let message = "";
   if (order.status === "completed") {
+    const ket = order.result ? `\nKeterangan: ${typeof order.result === "string" ? order.result : JSON.stringify(order.result)}` : "";
     message =
       `Halo ${order.name}!\n\n` +
       `Pesanan kamu *${order.id}* sudah selesai diproses.\n\n` +
-      `Layanan: ${serviceLabel}\nIMEI: ${order.imei}\nStatus: Berhasil\n\n` +
+      `Layanan: ${serviceLabel}\nIMEI: ${order.imei}\nStatus: Berhasil${ket}\n\n` +
       `Terima kasih sudah menggunakan layanan kami!`;
   } else if (order.status === "waiting") {
     message =

@@ -28,6 +28,8 @@ export async function PATCH(
   const { orderId } = await params;
   const body = await request.json();
   const newStatus = body.status;
+  const newResult = body.result;
+  const shouldNotify = body.notify !== false; // default true
   
   if (!newStatus || !["pending", "processing", "waiting", "completed", "failed"].includes(newStatus)) {
     return Response.json({ success: false, message: "Status tidak valid" }, { status: 400 });
@@ -41,6 +43,11 @@ export async function PATCH(
 
   const oldStatus = order.status;
   order.status = newStatus;
+
+  // Save result/notes if provided
+  if (newResult !== undefined) {
+    order.result = newResult;
+  }
   
   if (["completed", "failed"].includes(newStatus)) {
     order.processedAt = new Date().toISOString();
@@ -48,15 +55,21 @@ export async function PATCH(
 
   await saveOrders(orders);
 
-  // Jika status berubah, kirim WA otomatis ke customer
-  if (oldStatus !== newStatus) {
+  // Kirim WA ke customer jika status berubah dan notify aktif
+  let notified = false;
+  if (oldStatus !== newStatus && shouldNotify && order.whatsapp) {
     try {
       const { notifyCustomer } = await import("@/lib/whatsapp");
       await notifyCustomer(order);
+      notified = true;
     } catch {
       // silent
     }
   }
 
-  return Response.json({ success: true, message: "Status pesanan diperbarui." });
+  return Response.json({ 
+    success: true, 
+    message: `Status pesanan diperbarui dari "${oldStatus}" ke "${newStatus}".${notified ? " Notifikasi WA terkirim." : ""}`,
+    order: { id: order.id, status: order.status, result: order.result }
+  });
 }

@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ShoppingCart, Layers, MessageSquare, CreditCard, Globe,
   Wrench, Settings, LogOut, Eye, EyeOff, Trash2, Play, RefreshCw,
   Copy, Search, ChevronDown, Plus, ExternalLink, Loader2, X, Check, Menu,
-  AlertCircle, CheckCircle, Info
+  AlertCircle, CheckCircle, Info, History, ArrowLeft
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -75,6 +75,7 @@ const TABS = [
   { id: "payments", label: "Pembayaran", icon: CreditCard },
   { id: "landing", label: "Landing Page", icon: Globe },
   { id: "api-tools", label: "API Tools", icon: Wrench },
+  { id: "cekceir-orders", label: "Riwayat API", icon: History },
   { id: "settings", label: "Pengaturan", icon: Settings },
 ];
 
@@ -269,23 +270,26 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [detail, setDetail] = useState<Order | null>(null);
-  const [editForm, setEditForm] = useState({ status: "", result: "" });
+  const [editForm, setEditForm] = useState({ status: "", result: "", notify: true });
   const [savingEdit, setSavingEdit] = useState(false);
   const [processing, setProcessing] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [manualForm, setManualForm] = useState({ name: "", whatsapp: "", imei: "", service: "status", price: "", status: "pending", notify: false });
   const [manualLoading, setManualLoading] = useState(false);
+  const [inlineUpdating, setInlineUpdating] = useState("");
 
   const openDetail = (o: Order) => {
     setDetail(o);
     let resStr = "";
     if (typeof o.result === "string") resStr = o.result;
     else if (o.result) resStr = JSON.stringify(o.result, null, 2);
-    setEditForm({ status: o.status, result: resStr });
+    setEditForm({ status: o.status, result: resStr, notify: true });
   };
 
   const saveDetail = async () => {
     if (!detail) return;
+    const statusChanged = editForm.status !== detail.status;
+    if (statusChanged && !confirm(`Ubah status dari "${detail.status}" ke "${editForm.status}"?${editForm.notify && detail.whatsapp ? " Notifikasi WA akan dikirim ke customer." : ""}`)) return;
     setSavingEdit(true);
     try {
       const r = await fetch(`/api/admin/orders/${detail.id}`, {
@@ -295,7 +299,7 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
       });
       const d = await r.json();
       if (d.success) {
-        toast("Pesanan berhasil diperbarui", "success");
+        toast(d.message || "Pesanan berhasil diperbarui", "success");
         setDetail(null);
         refresh();
       } else {
@@ -303,6 +307,24 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
       }
     } catch (e) { toast("Terjadi kesalahan jaringan", "error"); }
     setSavingEdit(false);
+  };
+
+  const inlineStatusChange = async (orderId: string, newStatus: string, oldStatus: string, whatsapp: string) => {
+    if (newStatus === oldStatus) return;
+    if (!confirm(`Ubah status dari "${oldStatus}" ke "${newStatus}"?`)) return;
+    setInlineUpdating(orderId);
+    try {
+      const r = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: authHeaders(token),
+        body: JSON.stringify({ status: newStatus, notify: !!whatsapp })
+      });
+      const d = await r.json();
+      if (d.success) toast(d.message || "Status diperbarui", "success");
+      else toast(d.message || "Gagal mengubah status", "error");
+      refresh();
+    } catch (e) { toast("Terjadi kesalahan jaringan", "error"); }
+    setInlineUpdating("");
   };
 
   const filtered = orders.filter((o) => {
@@ -419,7 +441,27 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
                 <td className="p-3 font-mono text-xs">{o.imei}</td>
                 <td className="p-3 text-xs">{o.service}</td>
                 <td className="p-3 font-medium">Rp {(o.price || 0).toLocaleString("id-ID")}</td>
-                <td className="p-3"><StatusBadge status={o.status}/></td>
+                <td className="p-3">
+                  <select
+                    value={o.status}
+                    onChange={(e) => inlineStatusChange(o.id, e.target.value, o.status, o.whatsapp)}
+                    disabled={inlineUpdating === o.id}
+                    className={`px-2 py-1 rounded-lg text-xs font-medium border-0 outline-none cursor-pointer appearance-none pr-5 bg-no-repeat bg-[length:12px] bg-[right_4px_center] ${
+                      o.status === "pending" ? "bg-amber-50 text-amber-700" :
+                      o.status === "processing" ? "bg-blue-50 text-blue-700" :
+                      o.status === "waiting" ? "bg-cyan-50 text-cyan-700" :
+                      o.status === "completed" ? "bg-green-50 text-green-700" :
+                      o.status === "failed" ? "bg-red-50 text-red-700" : "bg-gray-50 text-gray-700"
+                    } ${inlineUpdating === o.id ? "opacity-50" : ""}`}
+                    style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")` }}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="processing">Diproses</option>
+                    <option value="waiting">Menunggu</option>
+                    <option value="completed">Selesai</option>
+                    <option value="failed">Gagal</option>
+                  </select>
+                </td>
                 <td className="p-3 text-xs text-gray-500">{new Date(o.createdAt).toLocaleDateString("id-ID")}</td>
                 <td className="p-3">
                   <div className="flex items-center gap-1">
@@ -468,6 +510,22 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
                 <option value="completed">Selesai</option>
                 <option value="failed">Gagal</option>
               </select>
+              {editForm.status !== detail.status && (
+                <div className="mt-2 flex items-center gap-2 text-xs">
+                  <span className="text-gray-400">Perubahan:</span>
+                  <StatusBadge status={detail.status}/>
+                  <span className="text-gray-400">→</span>
+                  <StatusBadge status={editForm.status}/>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3">
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={editForm.notify} onChange={(e) => setEditForm(prev => ({ ...prev, notify: e.target.checked }))} className="rounded text-primary focus:ring-primary"/>
+                Kirim notifikasi WhatsApp ke customer
+              </label>
+              {!detail.whatsapp && <p className="text-xs text-amber-600 mt-1">Customer ini tidak punya nomor WhatsApp.</p>}
             </div>
 
             <div className="mt-3">
@@ -1065,6 +1123,187 @@ function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, typ
   );
 }
 
+// ====== CEKCEIR ORDERS TAB ======
+interface CeirOrderItem { id: string; service: string; imei: string; via: string; price: string; status: string; time?: string; orderTime?: string; processTime?: string; completionTime?: string; detailUrl: string | null }
+
+function CekceirOrdersTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
+  const [type, setType] = useState<"user" | "roamer">("user");
+  const [orders, setOrders] = useState<CeirOrderItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [detail, setDetail] = useState<{ fields: Record<string, string>; logs: string } | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailId, setDetailId] = useState("");
+
+  const fetchOrders = useCallback(async (searchQuery?: string) => {
+    setLoading(true);
+    setOrders([]);
+    try {
+      const params = new URLSearchParams({ type });
+      if (searchQuery) params.set("search", searchQuery);
+      const r = await fetch(`/api/admin/cekceir-orders?${params}`, { headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) setOrders(d.orders || []);
+      else toast(d.message || "Gagal memuat data", "error");
+    } catch { toast("Terjadi kesalahan jaringan", "error"); }
+    setLoading(false);
+  }, [token, type, toast]);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  const openDetail = async (orderId: string) => {
+    const cleanId = orderId.replace("#", "");
+    setDetailId(cleanId);
+    setDetailLoading(true);
+    setDetail(null);
+    try {
+      const r = await fetch(`/api/admin/cekceir-orders?type=${type}&detail=${cleanId}`, { headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success && d.detail) setDetail(d.detail);
+      else toast(d.message || "Gagal memuat detail", "error");
+    } catch { toast("Terjadi kesalahan jaringan", "error"); }
+    setDetailLoading(false);
+  };
+
+  const handleSearch = () => { fetchOrders(search); };
+
+  const statusColor = (s: string) => {
+    const sl = s.toLowerCase();
+    if (sl === "success") return "bg-green-50 text-green-700";
+    if (sl === "pending" || sl === "processing") return "bg-amber-50 text-amber-700";
+    if (sl === "failed" || sl === "error") return "bg-red-50 text-red-700";
+    return "bg-gray-50 text-gray-700";
+  };
+
+  return (
+    <div>
+      {loading && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col items-center justify-center backdrop-blur-sm">
+          <Loader2 size={48} className="animate-spin text-white mb-4"/>
+          <p className="text-white font-semibold text-lg">Memuat data dari Cekceir...</p>
+          <p className="text-white/70 text-sm mt-2">Proses login & scraping, mohon tunggu.</p>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold">Riwayat Pesanan API</h2>
+        <button onClick={() => fetchOrders(search)} disabled={loading} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50">
+          <RefreshCw size={16}/> Refresh
+        </button>
+      </div>
+
+      {/* Type Switcher */}
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setType("user")} className={`px-4 py-2 rounded-xl text-sm font-medium transition ${type === "user" ? "bg-primary text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+          Pesanan CEIR
+        </button>
+        <button onClick={() => setType("roamer")} className={`px-4 py-2 rounded-xl text-sm font-medium transition ${type === "roamer" ? "bg-primary text-white shadow-md" : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+          Pesanan Roamer
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="flex gap-3 mb-4">
+        <div className="relative flex-1">
+          <Search size={16} className="absolute left-3 top-3 text-gray-400"/>
+          <input type="text" placeholder="Cari IMEI atau Order ID..." value={search} onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+        </div>
+        <button onClick={handleSearch} disabled={loading} className="bg-primary text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50">
+          Cari
+        </button>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-gray-500 bg-gray-50">
+              <th className="p-3">ID</th>
+              <th className="p-3">Layanan</th>
+              <th className="p-3">IMEI</th>
+              <th className="p-3">Via</th>
+              <th className="p-3">Harga</th>
+              <th className="p-3">Status</th>
+              {type === "user" ? <th className="p-3">Waktu</th> : (
+                <><th className="p-3">Waktu Order</th><th className="p-3">Waktu Proses</th><th className="p-3">Selesai</th></>
+              )}
+              <th className="p-3">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((o, i) => (
+              <tr key={`${o.id}-${i}`} className="border-b border-gray-50 hover:bg-gray-50/50">
+                <td className="p-3 font-mono text-primary font-medium">{o.id}</td>
+                <td className="p-3 text-xs max-w-[180px] truncate">{o.service}</td>
+                <td className="p-3 font-mono text-xs">{o.imei}</td>
+                <td className="p-3"><span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{o.via}</span></td>
+                <td className="p-3 font-medium text-xs">{o.price}</td>
+                <td className="p-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColor(o.status)}`}>{o.status}</span></td>
+                {type === "user" ? (
+                  <td className="p-3 text-xs text-gray-500 whitespace-nowrap">{o.time}</td>
+                ) : (
+                  <>
+                    <td className="p-3 text-xs text-gray-500 whitespace-nowrap">{o.orderTime}</td>
+                    <td className="p-3 text-xs text-gray-500 whitespace-nowrap">{o.processTime}</td>
+                    <td className="p-3 text-xs text-gray-500 whitespace-nowrap">{o.completionTime}</td>
+                  </>
+                )}
+                <td className="p-3">
+                  <button onClick={() => openDetail(o.id)} className="px-3 py-1.5 rounded-lg text-xs font-medium border border-primary/30 text-primary hover:bg-primary/5 transition">
+                    Detail
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!loading && !orders.length && <div className="p-8 text-center text-gray-400">Tidak ada data pesanan</div>}
+      </div>
+
+      {/* Detail Modal */}
+      {(detail || detailLoading) && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => { setDetail(null); setDetailId(""); }}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Detail Order #{detailId}</h3>
+              <button onClick={() => { setDetail(null); setDetailId(""); }} className="p-1 rounded-lg hover:bg-gray-100"><X size={18}/></button>
+            </div>
+            {detailLoading ? (
+              <div className="flex flex-col items-center py-8">
+                <Loader2 size={32} className="animate-spin text-primary mb-3"/>
+                <p className="text-sm text-gray-500">Memuat detail...</p>
+              </div>
+            ) : detail ? (
+              <div className="space-y-3">
+                {Object.entries(detail.fields).filter(([k]) => k !== 'raw').map(([key, val]) => (
+                  <div key={key} className="flex justify-between py-1.5 border-b border-gray-50 text-sm">
+                    <span className="text-gray-500 capitalize">{key.replace(/_/g, ' ')}</span>
+                    <span className="font-medium text-right max-w-[60%] break-all">{val}</span>
+                  </div>
+                ))}
+                {detail.logs && (
+                  <div className="mt-3">
+                    <p className="text-sm font-semibold mb-1">Logs / Hasil:</p>
+                    <pre className="bg-gray-50 rounded-xl p-3 text-xs text-gray-700 whitespace-pre-wrap font-mono max-h-60 overflow-y-auto border border-gray-100">{detail.logs}</pre>
+                  </div>
+                )}
+                {detail.fields['raw'] && (
+                  <div className="mt-3">
+                    <p className="text-sm font-semibold mb-1">Raw Response:</p>
+                    <pre className="bg-gray-50 rounded-xl p-3 text-xs text-gray-700 whitespace-pre-wrap font-mono max-h-60 overflow-y-auto border border-gray-100">{detail.fields['raw']}</pre>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ====== SETTINGS TAB ======
 function SettingsTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [oldPw, setOldPw] = useState("");
@@ -1185,6 +1424,7 @@ export default function AdminPage() {
           {activeTab === "payments" && <PaymentsTab token={token} toast={showToast}/>}
           {activeTab === "landing" && <LandingTab token={token} toast={showToast}/>}
           {activeTab === "api-tools" && <ApiToolsTab token={token} toast={showToast}/>}
+          {activeTab === "cekceir-orders" && <CekceirOrdersTab token={token} toast={showToast}/>}
           {activeTab === "settings" && <SettingsTab token={token} toast={showToast}/>}
         </main>
       </div>

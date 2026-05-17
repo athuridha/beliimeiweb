@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/assets/img/favicon.png" type="image/png">
+    <title>Cek CEIR (IMEI) Online Indonesia | CEKCEIR</title>
+    <meta name="description"
+        content="Cek CEIR online: periksa status CEIR & IMEI perangkat Anda secara cepat dan akurat. Proses detik‑an, harga terjangkau, dan hasil jelas. CEKCEIR membantu verifikasi legalitas perangkat di Indonesia.">
+    <link rel="canonical" href="https://cekceir.fun/">
+    <!-- Preload critical Font Awesome font (solid) for faster icon paint -->
+    <link rel="preload" href="/assets/webfonts/fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/webfonts/fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- Open Graph / Twitter -->
+    <meta property="og:title" content="Cek CEIR (IMEI) Online Indonesia | CEKCEIR">
+    <meta property="og:description"
+        content="Cek CEIR online: periksa status CEIR & IMEI perangkat Anda secara cepat dan akurat. Proses detik‑an, harga terjangkau, dan hasil jelas.">
+    <meta property="og:url" content="https://cekceir.fun/">
+    <meta property="og:site_name" content="CEKCEIR">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://cekceir.fun/assets/img/hero-image.jpg">
+    <meta property="og:locale" content="id_ID">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Cek CEIR (IMEI) Online Indonesia | CEKCEIR">
+    <meta name="twitter:description"
+        content="Cek CEIR online: periksa status CEIR & IMEI perangkat Anda secara cepat dan akurat. Proses detik‑an, harga terjangkau, dan hasil jelas.">
+    <meta name="twitter:image" content="https://cekceir.fun/assets/img/hero-image.jpg">
+
+    <!-- Combined CSS bundle (style + font-awesome) -->
+    <link rel="stylesheet" href="/build_css.php?v=1.0.4">
+
+    <!-- Structured Data: Organization & WebSite -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "CEKCEIR",
+            "url": "https://cekceir.fun/",
+            "alternateName": "cekceir",
+                        "logo": "https://cekceir.fun/assets/img/favicon.png",
+                        "contactPoint": [{
+                            "@type": "ContactPoint",
+                            "contactType": "customer support",
+                            "email": "support@cekceir.fun",
+                            "telephone": "+62-851-2110-8334",
+                            "areaServed": "ID"
+                        }]
+        }
+    </script>
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "url": "https://cekceir.fun/",
+            "name": "CEKCEIR"
+        }
+    </script>
+    <!-- Structured Data: FAQPage (from on-page FAQ) -->
+    <script type="application/ld+json">
+        {
+                    "@context": "https://schema.org",
+                    "@type": "FAQPage",
+                    "mainEntity": [
+                        {
+                            "@type": "Question",
+                            "name": "Apa itu CEIR dan mengapa penting?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "CEIR (Central Equipment Identity Register) adalah database resmi Kemkominfo yang mencatat status legalitas perangkat telekomunikasi di Indonesia. Perangkat yang tidak terdaftar atau berstatus blacklist tidak dapat menggunakan jaringan seluler di Indonesia."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Apakah data IMEI saya aman?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Ya, sangat aman. Kami menggunakan enkripsi SSL dan tidak menyimpan data IMEI Anda setelah pengecekan selesai. Data hanya digunakan untuk proses pengecekan."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Berapa lama proses pengecekan CEIR?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Proses pengecekan sangat cepat, biasanya selesai dalam waktu kurang dari 30–80 detik setelah melakukan pesanan. Hasil akan langsung ditampilkan di website."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Metode pembayaran apa saja yang tersedia?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Kami menerima pembayaran melalui QRIS. Semua pembayaran diproses otomatis."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Bagaimana cara membaca hasil Status CEIR?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Jika Roaming Status menunjukkan Roamer, maka IMEI perangkat dalam mode turis. Jika Anda bukan turis, besar kemungkinan perangkat ilegal dan sinyal bisa hilang. Jika menunjukkan Registered, perangkat resmi/legal. Jika tetap tidak mendapat sinyal, kemungkinan hasil registrasi tidak resmi. Jika menunjukkan UNKNOWN, maka IMEI ilegal dan bukan mode turis."
+                            }
+                        },
+                        {
+                            "@type": "Question",
+                            "name": "Bagaimana cara membaca hasil History CEIR?",
+                            "acceptedAnswer": {
+                                "@type": "Answer",
+                                "text": "Jika History CEIR kosong, bisa jadi perangkat tidak resmi/blacklist atau sudah resmi namun perlu cek ulang Roaming Status harus Registered. Jika History CEIR menampilkan nilai IMSI, perangkat biasanya resmi Kemenperin. Jika ada event seperti add_roamer, inbound_roamer, remove_roamer, berarti perangkat dalam mode turis."
+                            }
+                        }
+                    ]
+                }
+    </script>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-F8WRS42TK8"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-F8WRS42TK8');
+</script>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-mobile-alt"></i>
+                <span>CEKCEIR</span>
+            </div>
+            <button class="hamburger" aria-label="Toggle navigation" aria-expanded="false">
+                <span class="bar bar1">&nbsp;</span>
+                <span class="bar bar2">&nbsp;</span>
+                <span class="bar bar3">&nbsp;</span>
+            </button>
+            <nav class="nav-menu">
+                <a href="#beranda">Beranda</a>
+                <a href="#layanan">Layanan</a>
+                <a href="#cara-kerja">Cara Kerja</a>
+                <a href="#faq">FAQ</a>
+				<a href="/api_docs">API Dokumentasi</a>
+                <button class="cta-button nav-cta" onclick="location.href='/login'">Masuk</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero" id="beranda">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Cek Status CEIR & Pastikan HP Anda Legal!</h1>
+                    <p>Verifikasi keamanan dan legalitas perangkat seluler Anda di Indonesia. Cek status CEIR dan
+                        roaming hanya dalam hitungan detik menggunakan IMEI!</p>
+                </div>
+                <div class="hero-image">
+                    <div class="shield-container">
+                        <i class="fas fa-mobile-alt shield-icon"></i>
+                        <div class="shield-glow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Service Cards -->
+    <section class="services" id="layanan">
+        <div class="container">
+            <h2>Pilih <span class="highlight">Layanan</span> Anda</h2>
+            <p class="services-subtitle">Dapatkan informasi lengkap dengan layanan status CEIR perangkat Anda dengan
+                harga terjangkau</p>
+            <div class="service-cards">
+                <div class="service-card">
+                    <div class="card-header">
+                        <h3>Cek Status CEIR</h3>
+                    </div>
+                    <div class="price">Rp 5.000</div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Status CEIR real-time</li>
+                        <li><i class="fas fa-check"></i> Status Roaming</li>
+                        <li><i class="fas fa-check"></i> Laporan Instant</li>
+                        <li><i class="fas fa-check"></i> Support 24/7</li>
+                    </ul>
+                    <button class="service-button" onclick="location.href='/login'">
+                        Pesan Sekarang
+                    </button>
+                    <p class="guarantee"><i class="fas fa-shield-alt"></i> Free claim Garansi 30H</p>
+                </div>
+                <div class="service-card popular">
+                    <div class="popular-badge">POPULAR</div>
+                    <div class="card-header">
+                        <h3>Cek History CEIR</h3>
+                    </div>
+                    <div class="price">Rp 7.000</div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> History CEIR real time</li>
+                        <li><i class="fas fa-check"></i> Riwayat Perangkat IMEI</li>
+                        <li><i class="fas fa-check"></i> Timeline Aktivitas</li>
+                        <li><i class="fas fa-check"></i> Data Lebih Detail</li>
+                    </ul>
+                    <button class="service-button" onclick="location.href='/login'">
+                        Pesan Sekarang
+                    </button>
+                    <p class="guarantee"><i class="fas fa-shield-alt"></i> Free claim Garansi 30H</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Section -->
+    <section class="why-choose">
+        <div class="container">
+            <h2>Mengapa Pilih <span class="highlight">CEKCEIR</span>?</h2>
+            <p class="section-subtitle">Kami menyediakan layanan pengecekan CEIR terbaik dengan standar keamanan yang
+                akurasi tinggi</p>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-circle">
+                        <div class="feature-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <h3>Akurasi 100%</h3>
+                    <p>Data real-time langsung dari database CEIR resmi Indonesia. Hasil yang sangat akurat dan yang
+                        pasti terpercaya.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-circle">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                    </div>
+                    <h3>Super Cepat</h3>
+                    <p>Proses pengecekan hanya 80 detik. Tidak perlu menunggu lama untuk mendapatkan hasil yang anda
+                        butuhkan.</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-circle">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                    </div>
+                    <h3>100% Aman</h3>
+                    <p>Data IMEI anda dilindungi dengan enkripsi SSL. Kami tidak menyimpan atau membagikan data
+                        informasi pribadi anda
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Guarantee Section -->
+    <section class="guarantee-section compact">
+        <div class="container">
+            <div class="guarantee-content">
+                <h2>Jaminan Kepuasan 100%</h2>
+                <p>Jika Anda tidak puas dengan layanan kami, kami akan mengembalikan uang Anda 100% tanpa pertanyaan
+                    lebih lanjut</p>
+                <div class="guarantee-badges">
+                    <div class="badge"><i class="fas fa-check"></i> Garansi Uang Kembali</div>
+                    <div class="badge"><i class="fas fa-check"></i> Support 24/7</div>
+                    <div class="badge"><i class="fas fa-check"></i> Data Aman & Privat</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="cara-kerja">
+        <div class="container">
+            <h2>Cara Kerja <span class="highlight">CEKCEIR</span></h2>
+            <p class="section-subtitle">Proses sederhana dan cepat untuk mengecek status CEIR perangkat Anda dengan
+                langkah terbaru</p>
+            <div class="steps-grid">
+                <div class="step-item">
+                    <div class="step-circle">
+                        <div class="step-number">1</div>
+                        <div class="step-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                    </div>
+                    <h3>Daftar Akun</h3>
+                    <p>Buat akun dengan mudah menggunakan username password dan email aktif</p>
+                </div>
+                <div class="step-item">
+                    <div class="step-circle">
+                        <div class="step-number">2</div>
+                        <div class="step-icon">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                    </div>
+                    <h3>Top up Saldo</h3>
+                    <p>Isi saldo akun Anda melalui berbagai metode pembayaran yang tersedia</p>
+                </div>
+                <div class="step-item">
+                    <div class="step-circle">
+                        <div class="step-number">3</div>
+                        <div class="step-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                    <h3>Pesan Layanan</h3>
+                    <p>Pilih layanan yang diinginkan dan masukkan nomor IMEI perangkat Anda</p>
+                </div>
+                <div class="step-item">
+                    <div class="step-circle">
+                        <div class="step-number">4</div>
+                        <div class="step-icon">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                    </div>
+                    <h3>Terima Hasil</h3>
+                    <p>Dapatkan laporan lengkap status CEIR perangkat Anda dalam waktu singkat</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tips IMEI Section (Compact) -->
+    <section class="guarantee-section compact tips-imei">
+        <div class="container">
+            <div class="guarantee-content">
+                <h2>Tips Menemukan IMEI</h2>
+                <div class="imei-tips-grid">
+                    <div class="tip-col">
+                        <h4>Melalui Kode</h4>
+                        <p>Ketik <strong>*#06#</strong> di aplikasi telepon</p>
+                    </div>
+                    <div class="tip-col">
+                        <h4>Pengaturan</h4>
+                        <p>Settings → About Phone → IMEI</p>
+                    </div>
+                    <div class="tip-col">
+                        <h4>Fisik HP</h4>
+                        <p>Cek di bawah baterai atau box HP</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <h2>Pertanyaan <span class="highlight">Umum</span></h2>
+            <p class="section-subtitle">Temukan jawaban atas pertanyaan yang sering diajukan tentang layanan CEKCEIR</p>
+
+            <div class="faq-list">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Apa itu CEIR dan mengapa penting?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>CEIR (Central Equipment Identity Register) adalah database resmi Kemkominfo yang mencatat
+                            status legalitas perangkat telekomunikasi di Indonesia. Perangkat yang tidak terdaftar atau
+                            berstatus blacklist tidak dapat menggunakan jaringan seluler di Indonesia. Pastikan dahulu
+                            sebelum membeli.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Apakah data IMEI saya aman?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Ya, sangat aman. Kami menggunakan enkripsi SSL dan tidak menyimpan data IMEI Anda setelah
+                            pengecekan selesai. Data hanya digunakan untuk proses pengecekan.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Berapa lama proses pengecekan CEIR?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Proses pengecekan sangat cepat, biasanya selesai dalam waktu kurang dari 30-80 detik setelah
+                            melakukan pesanan. Hasil akan langsung ditampilkan di website.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Metode pembayaran apa saja yang tersedia?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Kami menerima pembayaran melalui QRIS. Semua pembayaran diproses otomatis.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Bagaimana cara membaca hasil Status CEIR?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Jika hasil Cek Roaming Status menunjukkan Roamer, maka IMEI perangkat dalam mode turis. Jika
+                            Anda bukan turis, maka dapat dipastikan Anda membeli perangkat ilegal, dan dalam kurun waktu
+                            tertentu sinyal akan hilang.</p>
+                        <br>
+                        <p>Jika hasil Cek Roaming Status menunjukkan Registered, maka dapat dipastikan IMEI perangkat
+                            resmi atau legal. Namun jika perangkat masih tidak mendapatkan sinyal, artinya kemungkinan
+                            hasil registrasi yang tidak resmi.</p>
+                        <br>
+                        <p>Jika hasil Cek Roaming Status menunjukkan UNKNOWN, maka dapat dipastikan IMEI perangkat
+                            ilegal dan juga tidak dalam mode turis.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span>Bagaimana cara membaca hasil History CEIR?</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Jika Cek History CEIR tidak menunjukkan apa-apa, ada dua kemungkinan: kemungkinan pertama
+                            perangkat tidak resmi atau blacklist, kemungkinan kedua perangkat resmi atau sudah membayar
+                            pajak di Bea Cukai. Namun untuk Bea Cukai, Anda harus mengecek lagi Cek Roaming Status dan
+                            hasilnya harus registered baru bisa dipastikan perangkat tersebut resmi.</p>
+                        <br>
+                        <p>Jika Cek History CEIR IMSI memiliki nilai, maka perangkat tersebut adalah Resmi Kemenperin.
+                            Namun jika perangkat tidak memiliki sinyal, kemungkinan besar adalah hasil registrasi yang
+                            tidak resmi. Silakan pastikan ke tempat Anda membeli perangkat.</p>
+                        <br>
+                        <p>Jika Cek History CEIR memperlihatkan hasil seperti add_roamer, inbound_roamer, remove_roamer,
+                            sudah dipastikan perangkat tersebut IMEI sedang dalam mode turis. Jika Anda bukan turis,
+                            silakan pastikan ke tempat Anda membeli perangkat.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>CEKCEIR</span>
+                    </div>
+                    <p>Menyediakan layanan pengecekan CEIR terpercaya untuk memastikan legalitas perangkat seluler Anda
+                        di Indonesia.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Layanan</h3>
+                    <ul>
+                        <li><a href="#">Status dan History</a></li>
+                        <li><a href="#">Cara Kerja</a></li>
+                        <li><a href="#">FAQ</a></li>
+						<li><a href="/api_docs"><i class="fas fa-code" style="margin-right:.35rem;font-size:.8em"></i>API Dokumentasi</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Perusahaan</h3>
+                    <ul>
+                        <li><a href="tentang">Tentang Kami</a></li>
+                        <li><a href="syarat-ketentuan">Syarat &amp; Ketentuan</a></li>
+                        <li><a href="kebijakan-privasi">Kebijakan Privasi</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Kontak</h3>
+                    <ul>
+                        <li><i class="fas fa-envelope"></i> <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="36454346465944427655535d55535f4418504358">[email&#160;protected]</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2025 CEKCEIR. Semua hak cipta dilindungi.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+    <script src="/script.js?v=1.0.5"></script>
+</body>
+
+</html>

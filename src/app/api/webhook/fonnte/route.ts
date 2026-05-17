@@ -90,6 +90,24 @@ export async function POST(request: NextRequest) {
     return Response.json({ status: "processed", order_id: orderId });
   }
 
+  // cek saldo command
+  if (["cek saldo", "ceksaldo", "saldo", "balance"].includes(message)) {
+    await sendWa(ADMIN_WA, `Mengecek saldo Cekceir...`);
+    try {
+      const { fetchApiBalance } = await import("@/lib/cekceir");
+      const result = await fetchApiBalance();
+      if (result.success) {
+        const balanceNum = typeof result.balance === 'number' ? result.balance : parseFloat(result.balance as string || "0");
+        await sendWa(ADMIN_WA, `*Info Saldo API Cekceir*\n\nSisa Saldo: Rp ${balanceNum.toLocaleString('id-ID')}`);
+      } else {
+        await sendWa(ADMIN_WA, `Gagal cek saldo: ${result.message}`);
+      }
+    } catch (e) {
+      await sendWa(ADMIN_WA, `Terjadi kesalahan saat cek saldo: ${e}`);
+    }
+    return Response.json({ status: "balance checked" });
+  }
+
   // cek/status command
   const statusMatch = message.match(/^(cek|status|check)\s+([a-z0-9\-]+)$/i);
   if (statusMatch) {
@@ -134,8 +152,30 @@ export async function POST(request: NextRequest) {
     return Response.json({ status: "info sent" });
   }
 
+  // topup command
+  const topupMatch = message.match(/^(topup|top up|isi|saldo)\s+(\d+)$/i);
+  if (topupMatch) {
+    const amountStr = topupMatch[2];
+    const amount = parseInt(amountStr, 10);
+    
+    await sendWa(ADMIN_WA, `Memproses topup Cekceir sebesar Rp ${amount.toLocaleString('id-ID')}...`);
+    
+    try {
+      const { requestCekceirTopup } = await import("@/lib/topup-automation");
+      const result = await requestCekceirTopup(amount);
+      if (result.success) {
+        await sendWa(ADMIN_WA, `*Topup Berhasil!*\n\nNominal: Rp ${amount.toLocaleString('id-ID')}\nTotal Bayar: ${result.totalBayar}\n\n*QRIS Text:*\n${result.qrString}\n\nSilakan salin text di atas dan gunakan aplikasi yang mendukung scan dari text atau convert ke barcode.`);
+      } else {
+        await sendWa(ADMIN_WA, `Topup Gagal: ${result.message}`);
+      }
+    } catch (e) {
+      await sendWa(ADMIN_WA, `Terjadi kesalahan saat topup: ${e}`);
+    }
+    return Response.json({ status: "topup processed" });
+  }
+
   if (["help", "bantuan", "?"].includes(message)) {
-    await sendWa(ADMIN_WA, `*Perintah Admin via WA:*\n\nok [nomor] - Proses pesanan\n  Contoh: ok 1\n\ncek [nomor] - Cek status pesanan\n  Contoh: cek 1\n\nlist - Lihat pesanan pending`);
+    await sendWa(ADMIN_WA, `*Perintah Admin via WA:*\n\nok [nomor] - Proses pesanan\n  Contoh: ok 1\n\ncek [nomor] - Cek status pesanan\n  Contoh: cek 1\n\nlist - Lihat pesanan pending\n\ncek saldo - Cek sisa saldo Cekceir\n\ntopup [nominal] - Topup saldo Cekceir\n  Contoh: topup 10000`);
     return Response.json({ status: "help sent" });
   }
 

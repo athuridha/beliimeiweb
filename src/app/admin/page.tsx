@@ -245,6 +245,15 @@ function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: 
 
   return (
     <div>
+      {/* Full screen loading alert for order processing */}
+      {processing && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
+          <Loader2 size={48} className="animate-spin text-white mb-4"/>
+          <p className="text-white font-semibold text-lg text-center px-4">Sedang memproses pesanan...</p>
+          <p className="text-white/70 text-sm mt-2 text-center px-4">Mohon tunggu, proses ini mungkin memakan waktu beberapa detik.</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold">Pesanan</h2>
         <button onClick={() => setShowManual(true)} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-primary-dark transition">
@@ -775,10 +784,12 @@ function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, typ
     { id: "roamer-add", label: "Roamer (Pending)", endpoint: "POST /roamer/add", cost: getCost("roamer", "Rp 95.000") },
     { id: "roamer-instant", label: "Roamer Instant", endpoint: "POST /roamer/instant", cost: getCost("roamer_instant", "Rp 95.000") },
     { id: "roamer-status", label: "Status Roamer", endpoint: "GET /roamer/status", cost: "Gratis" },
+    { id: "cekceir-topup", label: "Topup Cekceir", endpoint: "POST /cekceir-topup", cost: "Gratis" },
   ];
   const [active, setActive] = useState("auth");
   const [imei, setImei] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [amount, setAmount] = useState("");
   const [result, setResult] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
 
@@ -812,6 +823,9 @@ function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, typ
         case "roamer-status":
           r = await fetch(`/api/admin/api-tools/roamer-status?order_id=${orderId}`, { headers: h });
           break;
+        case "cekceir-topup":
+          r = await fetch("/api/admin/api-tools/cekceir-topup", { method: "POST", headers: h, body: JSON.stringify({ amount }) });
+          break;
       }
       if (r) {
         const data = await r.json();
@@ -826,9 +840,19 @@ function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, typ
   const tool = tools.find((t) => t.id === active);
   const needsImei = ["order-status", "order-history", "roamer-add", "roamer-instant"].includes(active);
   const needsOrderId = ["ceir-status", "roamer-status"].includes(active);
+  const needsAmount = ["cekceir-topup"].includes(active);
 
   return (
     <div>
+      {/* Full screen loading alert for API processes */}
+      {loading && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex flex-col items-center justify-center backdrop-blur-sm animate-in fade-in duration-200">
+          <Loader2 size={48} className="animate-spin text-white mb-4"/>
+          <p className="text-white font-semibold text-lg text-center px-4">Sedang memproses permintaan API...</p>
+          <p className="text-white/70 text-sm mt-2 text-center px-4">Mohon tunggu, proses ini mungkin memakan waktu beberapa detik.</p>
+        </div>
+      )}
+
       <h2 className="text-xl font-bold mb-6">API Tools</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">
         {tools.map((t) => (
@@ -855,7 +879,11 @@ function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, typ
           <input type="text" placeholder="Order ID (contoh: CEKCEIR-STATUS-2551)" value={orderId} onChange={(e) => setOrderId(e.target.value)}
             className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
         )}
-        <button onClick={run} disabled={loading || (needsImei && imei.length < 14) || (needsOrderId && !orderId)}
+        {needsAmount && (
+          <input type="number" placeholder="Nominal Topup (contoh: 10000)" value={amount} onChange={(e) => setAmount(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm mb-3 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+        )}
+        <button onClick={run} disabled={loading || (needsImei && imei.length < 14) || (needsOrderId && !orderId) || (needsAmount && !amount)}
           className="bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50 flex items-center gap-2">
           {loading ? <><Loader2 size={16} className="animate-spin"/> Menjalankan...</> : <><Play size={16}/> Jalankan</>}
         </button>

@@ -7,6 +7,7 @@ import {
   Copy, Search, ChevronDown, Plus, ExternalLink, Loader2, X, Check, Menu,
   AlertCircle, CheckCircle, Info
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 
 // ====== TYPES ======
 interface Order {
@@ -104,11 +105,37 @@ function Sidebar({ active, setActive, pendingCount, onLogout }: { active: string
 }
 
 // ====== DASHBOARD TAB ======
-function DashboardTab({ orders, token }: { orders: Order[]; token: string }) {
+function DashboardTab({ orders, token, toast }: { orders: Order[]; token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [balance, setBalance] = useState<number | null>(null);
+  const [showTopup, setShowTopup] = useState(false);
+  const [topupAmount, setTopupAmount] = useState("");
+  const [topupLoading, setTopupLoading] = useState(false);
+  const [topupResult, setTopupResult] = useState<{qrString: string, totalBayar: string} | null>(null);
+
   useEffect(() => {
     fetch("/api/admin/balance", { headers: authHeaders(token) }).then((r) => r.json()).then((d) => { if (d.success) setBalance(d.balance); });
   }, [token]);
+
+  const handleTopup = async () => {
+    setTopupLoading(true);
+    try {
+      const r = await fetch("/api/admin/api-tools/cekceir-topup", {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({ amount: topupAmount })
+      });
+      const d = await r.json();
+      if (d.success) {
+        setTopupResult(d);
+        toast("Berhasil membuat tagihan topup", "success");
+      } else {
+        toast(d.message || "Gagal memproses topup", "error");
+      }
+    } catch (e) {
+      toast("Terjadi kesalahan jaringan", "error");
+    }
+    setTopupLoading(false);
+  };
 
   const total = orders.length;
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -134,9 +161,16 @@ function DashboardTab({ orders, token }: { orders: Order[]; token: string }) {
       <h2 className="text-xl font-bold mb-6">Dashboard</h2>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {cards.map((c, i) => (
-          <div key={i} className={`bg-white rounded-xl p-5 shadow-sm border-l-4 ${c.color}`}>
+          <div key={i} className={`bg-white rounded-xl p-5 shadow-sm border-l-4 ${c.color} relative`}>
             <p className="text-sm text-gray-500">{c.label}</p>
             <p className="text-2xl font-bold mt-1">{c.value}</p>
+            {c.label === "Saldo API" && (
+              <button 
+                onClick={() => setShowTopup(true)}
+                className="absolute top-4 right-4 bg-purple-100 text-purple-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-purple-200 transition">
+                + Isi Saldo
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -159,6 +193,64 @@ function DashboardTab({ orders, token }: { orders: Order[]; token: string }) {
           </table>
         </div>
       </div>
+
+      {showTopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowTopup(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-lg">Isi Saldo Cekceir</h3>
+              <button onClick={() => setShowTopup(false)} className="p-1 rounded-lg hover:bg-gray-100"><X size={18}/></button>
+            </div>
+            
+            {!topupResult ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Nominal Topup</label>
+                  <input type="number" placeholder="Contoh: 50000" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)}
+                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"/>
+                  <p className="text-xs text-gray-500 mt-1">Masukkan nominal saldo yang ingin diisi ke akun Cekceir.</p>
+                </div>
+                <button onClick={handleTopup} disabled={topupLoading || !topupAmount} 
+                  className="w-full bg-primary text-white py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition disabled:opacity-50 flex items-center justify-center gap-2">
+                  {topupLoading ? <><Loader2 size={16} className="animate-spin"/> Memproses...</> : "Generate QRIS"}
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="bg-green-50 text-green-700 p-3 rounded-xl text-sm mb-4 border border-green-200 flex items-start gap-2">
+                  <CheckCircle size={18} className="shrink-0 mt-0.5"/>
+                  <div>
+                    <p className="font-semibold">Berhasil Generate QRIS</p>
+                    <p>Silahkan scan kode QRIS di bawah atau copy text QRIS-nya.</p>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-1">Total yang harus dibayar:</p>
+                  <p className="text-2xl font-bold text-primary">{topupResult.totalBayar}</p>
+                </div>
+
+                <div className="flex justify-center bg-white p-4 rounded-xl border border-gray-200">
+                  <QRCodeSVG value={topupResult.qrString} size={256} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold mb-2">String QRIS:</p>
+                  <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                    <input type="text" value={topupResult.qrString} readOnly className="flex-1 bg-transparent text-xs text-gray-700 outline-none font-mono"/>
+                    <button onClick={() => navigator.clipboard.writeText(topupResult.qrString)} className="text-gray-500 hover:text-gray-700"><Copy size={16}/></button>
+                  </div>
+                </div>
+                
+                <button onClick={() => { setTopupResult(null); setShowTopup(false); setTopupAmount(""); }} 
+                  className="w-full border border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition mt-2">
+                  Tutup
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -888,7 +980,16 @@ function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, typ
           {loading ? <><Loader2 size={16} className="animate-spin"/> Menjalankan...</> : <><Play size={16}/> Jalankan</>}
         </button>
         {result != null && (
-          <div className="mt-4">
+          <div className="mt-4 space-y-4">
+            {typeof result === 'object' && result !== null && 'qrString' in result && typeof (result as Record<string, unknown>).qrString === 'string' && (
+              <div className="bg-white border border-gray-200 p-6 rounded-xl flex flex-col items-center gap-4">
+                <p className="font-semibold text-gray-800">Scan QR Code untuk Topup:</p>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <QRCodeSVG value={(result as any).qrString} size={256} />
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <p className="text-2xl font-bold text-primary">{(result as any).totalBayar}</p>
+              </div>
+            )}
             <pre className="bg-gray-900 text-green-400 p-4 rounded-xl text-xs overflow-auto max-h-96 whitespace-pre-wrap">{JSON.stringify(result as Record<string, unknown>, null, 2)}</pre>
           </div>
         )}
@@ -1010,7 +1111,7 @@ export default function AdminPage() {
           <h1 className="font-bold text-lg">BeliIMEI Admin</h1>
         </header>
         <main className="p-4 sm:p-6 lg:p-8">
-          {activeTab === "dashboard" && <DashboardTab orders={orders} token={token}/>}
+          {activeTab === "dashboard" && <DashboardTab orders={orders} token={token} toast={showToast}/>}
           {activeTab === "orders" && <OrdersTab orders={orders} token={token} refresh={loadOrders} toast={showToast}/>}
           {activeTab === "services" && <ServicesTab token={token} toast={showToast}/>}
           {activeTab === "testimonials" && <TestimonialsTab token={token} toast={showToast}/>}

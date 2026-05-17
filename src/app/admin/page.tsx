@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, ShoppingCart, Layers, MessageSquare, CreditCard, Globe,
   Wrench, Settings, LogOut, Eye, EyeOff, Trash2, Play, RefreshCw,
-  Copy, Search, ChevronDown, Plus, ExternalLink, Loader2, X, Check, Menu
+  Copy, Search, ChevronDown, Plus, ExternalLink, Loader2, X, Check, Menu,
+  AlertCircle, CheckCircle, Info
 } from "lucide-react";
 
 // ====== TYPES ======
@@ -172,7 +173,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ====== ORDERS TAB ======
-function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string; refresh: () => void }) {
+function OrdersTab({ orders, token, refresh, toast }: { orders: Order[]; token: string; refresh: () => void; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [detail, setDetail] = useState<Order | null>(null);
@@ -192,35 +193,53 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
 
   const submitManual = async () => {
     setManualLoading(true);
-    const r = await fetch("/api/admin/orders", { method: "POST", headers: authHeaders(token), body: JSON.stringify(manualForm) });
-    const d = await r.json();
-    if (d.success) {
-      setShowManual(false);
-      setManualForm({ name: "", whatsapp: "", imei: "", service: "status", price: "", status: "pending", notify: false });
-      refresh();
-    } else {
-      alert(d.message || "Gagal membuat pesanan");
-    }
+    try {
+      const r = await fetch("/api/admin/orders", { method: "POST", headers: authHeaders(token), body: JSON.stringify(manualForm) });
+      const d = await r.json();
+      if (d.success) {
+        setShowManual(false);
+        setManualForm({ name: "", whatsapp: "", imei: "", service: "status", price: "", status: "pending", notify: false });
+        refresh();
+        toast("Pesanan manual berhasil dibuat", "success");
+      } else {
+        toast(d.message || "Gagal membuat pesanan", "error");
+      }
+    } catch (e) { toast("Terjadi kesalahan jaringan", "error"); }
     setManualLoading(false);
   };
 
   const processOrder = async (id: string) => {
     setProcessing(id);
-    await fetch(`/api/admin/process/${id}`, { method: "POST", headers: authHeaders(token) });
-    refresh();
+    try {
+      const r = await fetch(`/api/admin/process/${id}`, { method: "POST", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) toast("Pesanan berhasil diproses", "success");
+      else toast(d.message || "Gagal memproses pesanan", "error");
+      refresh();
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
     setProcessing("");
   };
 
   const deleteOrder = async (id: string) => {
     if (!confirm("Hapus pesanan ini?")) return;
-    await fetch(`/api/admin/orders/${id}`, { method: "DELETE", headers: authHeaders(token) });
-    refresh();
+    try {
+      const r = await fetch(`/api/admin/orders/${id}`, { method: "DELETE", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) toast("Pesanan dihapus", "success");
+      else toast("Gagal menghapus pesanan", "error");
+      refresh();
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
   };
 
   const checkStatus = async (id: string) => {
     setProcessing(id);
-    await fetch(`/api/admin/check-status/${id}`, { method: "POST", headers: authHeaders(token) });
-    refresh();
+    try {
+      const r = await fetch(`/api/admin/check-status/${id}`, { method: "POST", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) toast("Status pesanan diperbarui", "success");
+      else toast(d.message || "Gagal cek status", "error");
+      refresh();
+    } catch(e) { toast("Terjadi kesalahan", "error"); }
     setProcessing("");
   };
 
@@ -367,7 +386,7 @@ function OrdersTab({ orders, token, refresh }: { orders: Order[]; token: string;
 }
 
 // ====== SERVICES TAB ======
-function ServicesTab({ token }: { token: string }) {
+function ServicesTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [pricing, setPricing] = useState<PricingData>({});
   const [apiPrices, setApiPrices] = useState<ApiPrices>({});
   const [edited, setEdited] = useState<Record<string, number>>({});
@@ -384,8 +403,13 @@ function ServicesTab({ token }: { token: string }) {
 
   const syncPrices = async () => {
     setSyncing(true);
-    await fetch("/api/admin/sync-prices", { method: "POST", headers: authHeaders(token) });
-    await load();
+    try {
+      const r = await fetch("/api/admin/sync-prices", { method: "POST", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) toast("Harga API berhasil disinkronkan", "success");
+      else toast("Gagal sinkronisasi harga", "error");
+      await load();
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
     setSyncing(false);
   };
 
@@ -393,9 +417,17 @@ function ServicesTab({ token }: { token: string }) {
     setSaving(true);
     const body: Record<string, { sell_price: number }> = {};
     for (const [code, price] of Object.entries(edited)) body[code] = { sell_price: price };
-    await fetch("/api/admin/pricing", { method: "POST", headers: authHeaders(token), body: JSON.stringify(body) });
-    await load();
-    setEdited({});
+    try {
+      const r = await fetch("/api/admin/pricing", { method: "POST", headers: authHeaders(token), body: JSON.stringify(body) });
+      const d = await r.json();
+      if (d.success) {
+        toast("Harga jual berhasil disimpan", "success");
+        setEdited({});
+        await load();
+      } else {
+        toast("Gagal menyimpan harga", "error");
+      }
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
     setSaving(false);
   };
 
@@ -444,7 +476,7 @@ function ServicesTab({ token }: { token: string }) {
 }
 
 // ====== TESTIMONIALS TAB ======
-function TestimonialsTab({ token }: { token: string }) {
+function TestimonialsTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [items, setItems] = useState<Testimonial[]>([]);
   const [genOrderId, setGenOrderId] = useState("");
   const [genName, setGenName] = useState("");
@@ -460,21 +492,38 @@ function TestimonialsTab({ token }: { token: string }) {
 
   const generate = async () => {
     setGenerating(true);
-    const r = await fetch("/api/admin/testimonials", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ order_id: genOrderId, customer_name: genName }) });
-    const d = await r.json();
-    if (d.success) setGenLink(`${window.location.origin}${d.link}`);
+    try {
+      const r = await fetch("/api/admin/testimonials", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ order_id: genOrderId, customer_name: genName }) });
+      const d = await r.json();
+      if (d.success) {
+        setGenLink(`${window.location.origin}${d.link}`);
+        toast("Link review berhasil dibuat", "success");
+      } else {
+        toast(d.message || "Gagal membuat link", "error");
+      }
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
     setGenerating(false);
   };
 
   const toggleVis = async (id: string) => {
-    await fetch(`/api/admin/testimonials/${id}/toggle`, { method: "POST", headers: authHeaders(token) });
-    load();
+    try {
+      const r = await fetch(`/api/admin/testimonials/${id}/toggle`, { method: "POST", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) toast("Status visibilitas diubah", "success");
+      else toast("Gagal mengubah visibilitas", "error");
+      load();
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Hapus testimoni ini?")) return;
-    await fetch(`/api/admin/testimonials/${id}`, { method: "DELETE", headers: authHeaders(token) });
-    load();
+    try {
+      const r = await fetch(`/api/admin/testimonials/${id}`, { method: "DELETE", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) toast("Testimoni dihapus", "success");
+      else toast("Gagal menghapus testimoni", "error");
+      load();
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
   };
 
   return (
@@ -522,7 +571,7 @@ function TestimonialsTab({ token }: { token: string }) {
 }
 
 // ====== PAYMENTS TAB ======
-function PaymentsTab({ token }: { token: string }) {
+function PaymentsTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [addType, setAddType] = useState("bank");
@@ -536,21 +585,41 @@ function PaymentsTab({ token }: { token: string }) {
   useEffect(() => { load(); }, [load]);
 
   const add = async () => {
-    await fetch("/api/admin/payment-methods", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ type: addType, ...addForm }) });
-    setShowAdd(false);
-    setAddForm({ label: "", bank_name: "", account_number: "", account_name: "", qris_string: "" });
-    load();
+    try {
+      const r = await fetch("/api/admin/payment-methods", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ type: addType, ...addForm }) });
+      const d = await r.json();
+      if (d.success) {
+        setShowAdd(false);
+        setAddForm({ label: "", bank_name: "", account_number: "", account_name: "", qris_string: "" });
+        toast("Metode pembayaran ditambahkan", "success");
+        load();
+      } else toast(d.message || "Gagal menambah metode", "error");
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
   };
 
   const toggle = async (m: PaymentMethod) => {
-    await fetch(`/api/admin/payment-methods/${m.id}/update`, { method: "POST", headers: authHeaders(token), body: JSON.stringify({ enabled: !m.enabled }) });
-    load();
+    try {
+      const r = await fetch(`/api/admin/payment-methods/${m.id}/update`, { method: "POST", headers: authHeaders(token), body: JSON.stringify({ enabled: !m.enabled }) });
+      const d = await r.json();
+      if (d.success) {
+        toast(`Metode ${m.enabled ? "dinonaktifkan" : "diaktifkan"}`, "success");
+        load();
+      }
+      else toast("Gagal mengubah status", "error");
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Hapus metode pembayaran ini?")) return;
-    await fetch(`/api/admin/payment-methods/${id}`, { method: "DELETE", headers: authHeaders(token) });
-    load();
+    try {
+      const r = await fetch(`/api/admin/payment-methods/${id}`, { method: "DELETE", headers: authHeaders(token) });
+      const d = await r.json();
+      if (d.success) {
+        toast("Metode pembayaran dihapus", "success");
+        load();
+      }
+      else toast("Gagal menghapus metode", "error");
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
   };
 
   return (
@@ -621,7 +690,7 @@ function PaymentsTab({ token }: { token: string }) {
 }
 
 // ====== LANDING PAGE TAB ======
-function LandingTab({ token }: { token: string }) {
+function LandingTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [config, setConfig] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -631,7 +700,12 @@ function LandingTab({ token }: { token: string }) {
 
   const save = async () => {
     setSaving(true);
-    await fetch("/api/admin/landing-config", { method: "POST", headers: authHeaders(token), body: JSON.stringify(config) });
+    try {
+      const r = await fetch("/api/admin/landing-config", { method: "POST", headers: authHeaders(token), body: JSON.stringify(config) });
+      const d = await r.json();
+      if (d.success) toast("Pengaturan landing page disimpan", "success");
+      else toast("Gagal menyimpan pengaturan", "error");
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
     setSaving(false);
   };
 
@@ -671,7 +745,7 @@ function LandingTab({ token }: { token: string }) {
 }
 
 // ====== API TOOLS TAB ======
-function ApiToolsTab({ token }: { token: string }) {
+function ApiToolsTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [apiPrices, setApiPrices] = useState<ApiPrices>({});
 
   useEffect(() => {
@@ -739,8 +813,13 @@ function ApiToolsTab({ token }: { token: string }) {
           r = await fetch(`/api/admin/api-tools/roamer-status?order_id=${orderId}`, { headers: h });
           break;
       }
-      if (r) setResult(await r.json());
-    } catch (e) { setResult({ error: String(e) }); }
+      if (r) {
+        const data = await r.json();
+        setResult(data);
+        if (data.status === true || data.success === true) toast("Berhasil dijalankan", "success");
+        else toast("Selesai dijalankan (cek hasil)", "info");
+      }
+    } catch (e) { setResult({ error: String(e) }); toast("Terjadi kesalahan eksekusi", "error"); }
     setLoading(false);
   };
 
@@ -791,7 +870,7 @@ function ApiToolsTab({ token }: { token: string }) {
 }
 
 // ====== SETTINGS TAB ======
-function SettingsTab({ token }: { token: string }) {
+function SettingsTab({ token, toast }: { token: string; toast: (msg: string, type?: "success" | "error" | "info") => void }) {
   const [oldPw, setOldPw] = useState("");
   const [newPw, setNewPw] = useState("");
   const [msg, setMsg] = useState("");
@@ -799,10 +878,17 @@ function SettingsTab({ token }: { token: string }) {
 
   const changePw = async () => {
     setSaving(true); setMsg("");
-    const r = await fetch("/api/admin/change-password", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ old_password: oldPw, new_password: newPw }) });
-    const d = await r.json();
-    setMsg(d.message);
-    if (d.success) { setOldPw(""); setNewPw(""); }
+    try {
+      const r = await fetch("/api/admin/change-password", { method: "POST", headers: authHeaders(token), body: JSON.stringify({ old_password: oldPw, new_password: newPw }) });
+      const d = await r.json();
+      setMsg(d.message);
+      if (d.success) {
+        setOldPw(""); setNewPw("");
+        toast("Password berhasil diubah", "success");
+      } else {
+        toast(d.message || "Gagal mengubah password", "error");
+      }
+    } catch (e) { toast("Terjadi kesalahan", "error"); }
     setSaving(false);
   };
 
@@ -833,6 +919,15 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [orders, setOrders] = useState<Order[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toasts, setToasts] = useState<{ id: string; msg: string; type: "success" | "error" | "info" }[]>([]);
+
+  const showToast = useCallback((msg: string, type: "success" | "error" | "info" = "info") => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, msg, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3500);
+  }, []);
 
   useEffect(() => {
     const t = localStorage.getItem("admin_token");
@@ -863,6 +958,17 @@ export default function AdminPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
+      {/* Toasts */}
+      <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+        {toasts.map((t) => (
+          <div key={t.id} className={`pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-right fade-in duration-300 ${t.type === "success" ? "bg-green-50 text-green-800 border border-green-200" : t.type === "error" ? "bg-red-50 text-red-800 border border-red-200" : "bg-blue-50 text-blue-800 border border-blue-200"}`}>
+            {t.type === "success" && <CheckCircle size={18} className="text-green-600"/>}
+            {t.type === "error" && <AlertCircle size={18} className="text-red-600"/>}
+            {t.type === "info" && <Info size={18} className="text-blue-600"/>}
+            {t.msg}
+          </div>
+        ))}
+      </div>
       {/* Mobile overlay */}
       {sidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}/>}
       {/* Sidebar */}
@@ -877,13 +983,13 @@ export default function AdminPage() {
         </header>
         <main className="p-4 sm:p-6 lg:p-8">
           {activeTab === "dashboard" && <DashboardTab orders={orders} token={token}/>}
-          {activeTab === "orders" && <OrdersTab orders={orders} token={token} refresh={loadOrders}/>}
-          {activeTab === "services" && <ServicesTab token={token}/>}
-          {activeTab === "testimonials" && <TestimonialsTab token={token}/>}
-          {activeTab === "payments" && <PaymentsTab token={token}/>}
-          {activeTab === "landing" && <LandingTab token={token}/>}
-          {activeTab === "api-tools" && <ApiToolsTab token={token}/>}
-          {activeTab === "settings" && <SettingsTab token={token}/>}
+          {activeTab === "orders" && <OrdersTab orders={orders} token={token} refresh={loadOrders} toast={showToast}/>}
+          {activeTab === "services" && <ServicesTab token={token} toast={showToast}/>}
+          {activeTab === "testimonials" && <TestimonialsTab token={token} toast={showToast}/>}
+          {activeTab === "payments" && <PaymentsTab token={token} toast={showToast}/>}
+          {activeTab === "landing" && <LandingTab token={token} toast={showToast}/>}
+          {activeTab === "api-tools" && <ApiToolsTab token={token} toast={showToast}/>}
+          {activeTab === "settings" && <SettingsTab token={token} toast={showToast}/>}
         </main>
       </div>
     </div>
